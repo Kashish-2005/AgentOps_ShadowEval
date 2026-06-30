@@ -8,11 +8,14 @@ on the provided input payloads.
 """
 
 import asyncio
+import logging
 import time
 from typing import Any, Literal, Callable, Awaitable
 from pydantic import BaseModel
 import os
 import aiohttp
+
+logger = logging.getLogger(__name__)
 
 
 class ToolResult(BaseModel):
@@ -45,7 +48,6 @@ async def query_database(payload: dict[str, Any]) -> ToolResult:
     start_time = time.perf_counter()
     tool_name = "query_database"
 
-    # Simulate latency (deterministic 30ms within 10-50ms range)
     await asyncio.sleep(0.03)
 
     table = payload.get("table")
@@ -58,7 +60,6 @@ async def query_database(payload: dict[str, Any]) -> ToolResult:
             execution_time_ms=execution_time,
         )
 
-    # Mock data registry
     mock_db: dict[str, list[dict[str, Any]]] = {
         "users": [{"id": 1, "name": "Admin"}, {"id": 2, "name": "Guest"}],
         "orders": [{"id": 101, "amount": 250.0}, {"id": 102, "amount": 45.0}],
@@ -82,7 +83,7 @@ async def financial_calculator(payload: dict[str, Any]) -> ToolResult:
     Args:
         payload: Dictionary containing:
             - 'operation': Literal["sum", "avg", "compound_interest"]
-            - 'values': list[float]. 
+            - 'values': list[float].
               For 'compound_interest', expected order is [principal, rate, years].
 
     Returns:
@@ -91,7 +92,6 @@ async def financial_calculator(payload: dict[str, Any]) -> ToolResult:
     start_time = time.perf_counter()
     tool_name = "financial_calculator"
 
-    # Simulate latency (deterministic 12ms within 5-20ms range)
     await asyncio.sleep(0.012)
 
     operation = payload.get("operation")
@@ -117,7 +117,6 @@ async def financial_calculator(payload: dict[str, Any]) -> ToolResult:
             case "avg":
                 result_value = sum(values) / len(values) if values else 0.0
             case "compound_interest":
-                # Formula: A = P(1 + r)^t
                 if len(values) >= 3:
                     p, r, t = values[:3]
                     result_value = p * (1 + r) ** t
@@ -145,7 +144,7 @@ async def financial_calculator(payload: dict[str, Any]) -> ToolResult:
 
 async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
     """
-    Calls a real LLM via HuggingFace Inference API, or returns a 
+    Calls a real LLM via HuggingFace Inference API, or returns a
     deterministic mock response if USE_REAL_LLM is not enabled.
 
     Args:
@@ -171,6 +170,7 @@ async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
 
     max_length = payload.get("max_length", 100)
     use_real_llm = os.getenv("USE_REAL_LLM", "False").lower() == "true"
+    logger.info(f"query_llm_inference called — USE_REAL_LLM={use_real_llm}")
 
     # --- Mock mode ---
     if not use_real_llm:
@@ -193,6 +193,8 @@ async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
     url = f"https://api-inference.huggingface.co/models/{model}"
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
 
+    logger.info(f"Calling HuggingFace model={model} api_key_present={bool(api_key)}")
+
     try:
         timeout = aiohttp.ClientTimeout(total=10)
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -205,6 +207,7 @@ async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
 
                 if resp.status != 200:
                     error_body = await resp.text()
+                    logger.warning(f"HuggingFace returned status {resp.status}: {error_body[:200]}")
                     return ToolResult(
                         tool_name=tool_name,
                         output={"error": f"HuggingFace API error {resp.status}: {error_body[:200]}"},
@@ -219,6 +222,8 @@ async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
                 else:
                     response_text = str(data)
 
+                logger.info(f"HuggingFace responded successfully, length={len(response_text)}")
+
                 return ToolResult(
                     tool_name=tool_name,
                     output={
@@ -232,6 +237,7 @@ async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
 
     except asyncio.TimeoutError:
         execution_time = (time.perf_counter() - start_time) * 1000
+        logger.warning("HuggingFace request timed out after 10 seconds")
         return ToolResult(
             tool_name=tool_name,
             output={"error": "LLM request timed out after 10 seconds"},
@@ -240,6 +246,7 @@ async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
         )
     except Exception as e:
         execution_time = (time.perf_counter() - start_time) * 1000
+        logger.error(f"LLM request failed: {str(e)}")
         return ToolResult(
             tool_name=tool_name,
             output={"error": f"LLM request failed: {str(e)}"},
