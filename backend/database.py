@@ -19,7 +19,7 @@ import aiosqlite
 from pydantic import BaseModel, Field, ConfigDict
 
 # Environment configuration
-DB_PATH = os.getenv("DB_PATH", "./shadoweval.db")
+DB_PATH = os.getenv("DB_PATH", "/data/shadoweval.db")
 
 logger = logging.getLogger(__name__)
 
