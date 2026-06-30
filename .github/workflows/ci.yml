@@ -62,6 +62,9 @@ jobs:
       - name: Build and start
         run: docker compose up --build -d
 
+      - name: Show backend logs
+        run: docker compose logs backend
+
       - name: Wait for health
         run: sleep 20
 
