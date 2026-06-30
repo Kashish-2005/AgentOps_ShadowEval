@@ -32,6 +32,21 @@ class RequestIDFilter(logging.Filter):
         return True
 
 
+class SafeJsonFormatter(jsonlogger.JsonFormatter):
+    """
+    Custom JSON formatter that safely extracts fields from the LogRecord.
+    Guarantees 'level' and 'timestamp' fields without relying on rename_fields 
+    mapping which can trigger KeyErrors.
+    """
+    def add_fields(self, log_record: dict[str, Any], record: logging.LogRecord, message_dict: dict[str, Any]) -> None:
+        super().add_fields(log_record, record, message_dict)
+        log_record["level"] = record.levelname
+        log_record["timestamp"] = self.formatTime(record, self.datefmt)
+        # Ensure redundant fields are removed if they were part of the fmt string
+        log_record.pop("levelname", None)
+        log_record.pop("asctime", None)
+
+
 def setup_logging(level: str = "INFO", json_format: bool = False) -> None:
     """
     Configures the root logger with handlers and formatters.
@@ -51,12 +66,9 @@ def setup_logging(level: str = "INFO", json_format: bool = False) -> None:
     handler.addFilter(RequestIDFilter())
 
     if json_format:
-        # Production JSON formatting
-        log_format = "%(timestamp)s %(level)s %(name)s %(message)s %(funcName)s %(lineno)d %(request_id)s"
-        formatter = jsonlogger.JsonFormatter(
-            log_format,
-            timestamp=True,
-            rename_fields={"levelname": "level", "asctime": "timestamp"}
+        # Production JSON formatting using the robust SafeJsonFormatter
+        formatter = SafeJsonFormatter(
+            "%(name)s %(message)s %(funcName)s %(lineno)d %(request_id)s"
         )
         # Suppress noisy uvicorn access logs in production unless they are warnings
         logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
@@ -81,7 +93,6 @@ def get_logger(name: str) -> logging.Logger:
     """
     logger = logging.getLogger(name)
     # Ensure the logger propagates to the root where the RequestIDFilter is attached
-    # but we add it here as well for safety in case of non-standard hierarchies.
     if not any(isinstance(f, RequestIDFilter) for f in logger.filters):
         logger.addFilter(RequestIDFilter())
     return logger
