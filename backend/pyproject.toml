@@ -1,0 +1,19 @@
+[project]
+name = "agentops-shadoweval"
+version = "1.0.0"
+requires-python = ">=3.11"
+description = "LLM Agent Evaluation Framework with persona simulation"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+log_cli = true
+log_cli_level = "INFO"
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING"]
