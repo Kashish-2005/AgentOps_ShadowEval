@@ -10,7 +10,6 @@ and summarizing execution paths.
 import asyncio
 from datetime import datetime, timezone
 from typing import Any, Literal, Callable, Awaitable
-from contextlib import asynccontextmanager
 
 from pydantic import BaseModel, Field
 
@@ -104,23 +103,22 @@ class TrajectoryTracker:
         }
 
 
-@asynccontextmanager
 async def tracked_tool_call(
-    tracker: TrajectoryTracker, 
-    tool_fn: Callable[[dict[str, Any]], Awaitable[Any]], 
+    tracker: TrajectoryTracker,
+    tool_fn: Callable[[dict[str, Any]], Awaitable[Any]],
     payload: dict[str, Any]
-):
+) -> Any:
     """
-    Async context manager that executes a tool, records its metadata to the 
-    provided tracker, and yields the result.
+    Executes a tool, records its metadata to the provided tracker,
+    and returns the result.
 
     Args:
         tracker: The TrajectoryTracker instance to log the call.
         tool_fn: The asynchronous tool function to execute.
         payload: The input dictionary for the tool.
 
-    Yields:
-        ToolResult: The result object from the tool execution.
+    Returns:
+        The result object from the tool execution.
     """
     # Execute the tool
     result = await tool_fn(payload)
@@ -137,4 +135,4 @@ async def tracked_tool_call(
     # Record to tracker (may raise InfiniteLoopError)
     await tracker.record(log)
 
-    yield result
+    return result

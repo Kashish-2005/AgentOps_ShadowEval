@@ -80,8 +80,8 @@ async def test_success_rate_is_zero_when_all_logs_error(
 
 
 async def test_tracked_tool_call_records_one_log(tracker: TrajectoryTracker) -> None:
-    async with tracked_tool_call(
+    result = await tracked_tool_call(
         tracker, query_database, {"table": "users"}
-    ) as result:
-        assert result.status == "success"
+    )
+    assert result.status == "success"
     assert len(tracker.get_logs()) == 1
