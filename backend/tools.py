@@ -190,7 +190,7 @@ async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
     # --- Real mode ---
     api_key = os.getenv("HUGGINGFACE_API_KEY", "")
     model = os.getenv("HUGGINGFACE_MODEL", "google/flan-t5-base")
-    url = f"https://api-inference.huggingface.co/models/{model}"
+    url = f"https://router.huggingface.co/hf-inference/models/{model}"
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
 
     logger.info(f"Calling HuggingFace model={model} api_key_present={bool(api_key)}")
