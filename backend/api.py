@@ -323,3 +323,15 @@ async def metrics() -> Response:
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST,
     )
+
+#TEMP
+@app.post("/api/v1/debug/test-llm")
+async def debug_test_llm(prompt: str = "Explain async Python in one sentence") -> dict:
+    """TEMPORARY — direct test of query_llm_inference, bypassing persona simulation."""
+    from tools import query_llm_inference
+    result = await query_llm_inference({"prompt": prompt})
+    return {
+        "status": result.status,
+        "output": result.output,
+        "execution_time_ms": result.execution_time_ms,
+    }
