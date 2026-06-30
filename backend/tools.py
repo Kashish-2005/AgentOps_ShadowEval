@@ -11,6 +11,8 @@ import asyncio
 import time
 from typing import Any, Literal, Callable, Awaitable
 from pydantic import BaseModel
+import os
+import aiohttp
 
 
 class ToolResult(BaseModel):
@@ -141,7 +143,113 @@ async def financial_calculator(payload: dict[str, Any]) -> ToolResult:
     )
 
 
+async def query_llm_inference(payload: dict[str, Any]) -> ToolResult:
+    """
+    Calls a real LLM via HuggingFace Inference API, or returns a 
+    deterministic mock response if USE_REAL_LLM is not enabled.
+
+    Args:
+        payload: Dictionary containing:
+            - 'prompt': str (required)
+            - 'max_length': int (optional, default 100)
+
+    Returns:
+        ToolResult: The model response or error details.
+    """
+    start_time = time.perf_counter()
+    tool_name = "query_llm"
+
+    prompt = payload.get("prompt")
+    if not prompt:
+        execution_time = (time.perf_counter() - start_time) * 1000
+        return ToolResult(
+            tool_name=tool_name,
+            output={"error": "Missing required key: 'prompt'"},
+            status="error",
+            execution_time_ms=execution_time,
+        )
+
+    max_length = payload.get("max_length", 100)
+    use_real_llm = os.getenv("USE_REAL_LLM", "False").lower() == "true"
+
+    # --- Mock mode ---
+    if not use_real_llm:
+        await asyncio.sleep(0.05)
+        execution_time = (time.perf_counter() - start_time) * 1000
+        return ToolResult(
+            tool_name=tool_name,
+            output={
+                "response": f"[mock response] Analysis of: {prompt[:50]}...",
+                "model": "mock-flan-t5",
+                "mock": True,
+            },
+            status="success",
+            execution_time_ms=execution_time,
+        )
+
+    # --- Real mode ---
+    api_key = os.getenv("HUGGINGFACE_API_KEY", "")
+    model = os.getenv("HUGGINGFACE_MODEL", "google/flan-t5-base")
+    url = f"https://api-inference.huggingface.co/models/{model}"
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+
+    try:
+        timeout = aiohttp.ClientTimeout(total=10)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(
+                url,
+                headers=headers,
+                json={"inputs": prompt, "parameters": {"max_length": max_length}},
+            ) as resp:
+                execution_time = (time.perf_counter() - start_time) * 1000
+
+                if resp.status != 200:
+                    error_body = await resp.text()
+                    return ToolResult(
+                        tool_name=tool_name,
+                        output={"error": f"HuggingFace API error {resp.status}: {error_body[:200]}"},
+                        status="error",
+                        execution_time_ms=execution_time,
+                    )
+
+                data = await resp.json()
+                response_text = ""
+                if isinstance(data, list) and len(data) > 0:
+                    response_text = data[0].get("generated_text", str(data[0]))
+                else:
+                    response_text = str(data)
+
+                return ToolResult(
+                    tool_name=tool_name,
+                    output={
+                        "response": response_text,
+                        "model": model,
+                        "mock": False,
+                    },
+                    status="success",
+                    execution_time_ms=execution_time,
+                )
+
+    except asyncio.TimeoutError:
+        execution_time = (time.perf_counter() - start_time) * 1000
+        return ToolResult(
+            tool_name=tool_name,
+            output={"error": "LLM request timed out after 10 seconds"},
+            status="error",
+            execution_time_ms=execution_time,
+        )
+    except Exception as e:
+        execution_time = (time.perf_counter() - start_time) * 1000
+        return ToolResult(
+            tool_name=tool_name,
+            output={"error": f"LLM request failed: {str(e)}"},
+            status="error",
+            execution_time_ms=execution_time,
+        )
+
+
 TOOL_REGISTRY: dict[str, Callable[[dict[str, Any]], Awaitable[ToolResult]]] = {
     "query_database": query_database,
     "financial_calculator": financial_calculator,
+    "query_llm": query_llm_inference,
 }
