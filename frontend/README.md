@@ -185,38 +185,54 @@ pytest tests/ -v
 ---
 
 ## Project Structure
-AgentOps_ShadowEval/
+
+```text
+AgentOps-ShadowEval/
 ├── backend/
-│   ├── api.py               # FastAPI routes + Prometheus metrics
-│   ├── config.py            # Pydantic Settings, env var management
-│   ├── database.py          # aiosqlite persistence + WAL mode
-│   ├── logging_config.py    # Structured JSON logging + request ID tracing
-│   ├── personas.py          # 5 persona profile definitions
-│   ├── tools.py             # query_database, financial_calculator, query_llm
-│   ├── tracker.py           # TrajectoryTracker + loop detection
-│   ├── traffic_engine.py    # Async simulation orchestration
-│   ├── validator.py         # Scoring rules + EvaluationReport
-│   ├── requirements.txt     # Pinned production dependencies
-│   ├── requirements-dev.txt # Dev + test dependencies
-│   ├── pyproject.toml       # Pytest + ruff + mypy config
-│   └── tests/               # 31 pytest tests
-│       ├── conftest.py
-│       ├── test_tools.py
-│       ├── test_tracker.py
-│       └── test_validator.py
+│   ├── api.py                    # FastAPI API endpoints
+│   ├── config.py                 # Application configuration
+│   ├── database.py               # SQLite database operations
+│   ├── logging_config.py         # Structured logging configuration
+│   ├── personas.py               # Persona definitions
+│   ├── tools.py                  # Simulated and LLM tool implementations
+│   ├── tracker.py                # Tool trajectory tracking & loop detection
+│   ├── traffic_engine.py         # Evaluation orchestration engine
+│   ├── validator.py              # Evaluation scoring & risk analysis
+│   ├── requirements.txt
+│   ├── requirements-dev.txt
+│   ├── pyproject.toml
+│   ├── .env.example
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── conftest.py
+│   │   ├── test_tools.py
+│   │   ├── test_tracker.py
+│   │   └── test_validator.py
+│   └── shadoweval.db             # SQLite database (generated locally)
+│
 ├── frontend/
-│   └── src/
-│       ├── components/      # Header, PersonaForm, ResultsTable,
-│       │                    # MetricsChart, LiveFeed, StatCard, Toast
-│       ├── hooks/           # useToast
-│       ├── utils/           # ApiClient, format helpers
-│       └── types/           # TypeScript interfaces
+│   ├── public/
+│   ├── src/
+│   │   ├── components/           # UI components
+│   │   ├── hooks/                # Custom React hooks
+│   │   ├── types/                # TypeScript types
+│   │   ├── utils/                # API client & helper utilities
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+│
+├── img/                          # Project screenshots
 ├── .github/
 │   └── workflows/
-│       └── ci.yml           # Backend tests + frontend typecheck + Docker smoke test
+│       └── ci.yml                # GitHub Actions CI pipeline
 ├── docker-compose.yml
 ├── prometheus.yml
-└── Makefile
+├── Makefile
+├── README.md
+└── LICENSE
+```
 ---
 
 ## Deployment
