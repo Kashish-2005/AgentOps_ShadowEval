@@ -36,22 +36,30 @@ The framework simulates multiple user personas with different interaction styles
 
 ```mermaid
 graph TD
-A[Personas] --> B[Traffic Engine]
-B --> C[Trajectory Tracker]
-C --> D[Validator]
-D --> E[FastAPI]
-E --> F[(SQLite)]
-E --> G[Prometheus]
+    A[Personas] --> B[Traffic Engine]
 
-subgraph Tools
-T1[query_database]
-T2[financial_calculator]
-T3[query_llm]
-end
+    subgraph Tools
+        T1[query_database mock]
+        T2[financial_calculator mock]
+        T3[query_llm HuggingFace]
+    end
 
-C --> T1
-C --> T2
-C --> T3
+    B --> T1
+    B --> T2
+    B --> T3
+
+    T1 --> C[Trajectory Tracker]
+    T2 --> C
+    T3 --> C
+
+    C --> D[Validator]
+    D --> E[FastAPI Backend]
+
+    E --> F[(SQLite)]
+    E --> G[Prometheus]
+    E --> H[React Dashboard]
+
+    H -->|Custom Prompt| E
 ```
 
 ## 🛠️ Tech Stack
