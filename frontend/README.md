@@ -235,16 +235,10 @@ checking, and a Docker smoke test on every push to main and every pull request.
 
 ## Screenshots
 
-### Dashboard
-![Dashboard](img/dashboard.png)
-
-### Evaluation History
-![Evaluation History](img/evaluation_history.png)
-
-### Performance Metrics
-![Performance Metrics](img/performance_metrics.png)
+_Add screenshots to docs/screenshots/ after capturing the live app._
 
 ---
+
 ## License
 
 MIT
