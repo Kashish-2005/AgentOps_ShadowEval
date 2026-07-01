@@ -14,12 +14,13 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any, Literal, AsyncGenerator
 from contextlib import asynccontextmanager
+from config import settings
 
 import aiosqlite
 from pydantic import BaseModel, Field, ConfigDict
 
 # Environment configuration
-DB_PATH = os.getenv("DB_PATH", "/data/shadoweval.db")
+DB_PATH = settings.DB_PATH
 
 logger = logging.getLogger(__name__)
 

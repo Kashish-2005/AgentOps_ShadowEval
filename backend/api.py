@@ -104,6 +104,10 @@ class BatchEvaluateRequest(BaseModel):
     persona_names: list[str] = Field(min_length=1, max_length=5)
     concurrency_limit: int = Field(default=3, ge=1, le=10)
 
+class CustomEvalRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=2000)
+    persona_name: str = "power_user"
+
 
 # ── Helper ───────────────────────────────────────────────────────────────────
 
@@ -249,6 +253,53 @@ async def evaluate_batch(request: BatchEvaluateRequest) -> list[RunResult]:
     finally:
         active_evaluations.dec(len(request.persona_names))
 
+@app.post("/api/v1/evaluate/custom", response_model=RunResult)
+async def evaluate_custom_prompt(request: CustomEvalRequest) -> RunResult:
+    """
+    Run a real user-submitted prompt through the evaluation pipeline.
+    Forces a real query_llm call with the user's exact text.
+    """
+    try:
+        persona_profile = get_persona(request.persona_name)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Persona '{request.persona_name}' not found. "
+                   f"Available: {list(PERSONAS.keys())}",
+        )
+
+    active_evaluations.inc()
+    try:
+        semaphore = asyncio.Semaphore(1)
+        result = await run_persona(
+            persona_profile,
+            semaphore,
+            custom_prompt=request.prompt,
+        )
+        _update_metrics(result)
+
+        try:
+            record = _run_result_to_record(result)
+            await insert_evaluation(record)
+        except Exception as db_err:
+            logger.error(f"Failed to persist custom evaluation: {db_err}")
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unexpected error during custom evaluation")
+        api_error_total.labels(
+            error_type=type(e).__name__,
+            endpoint="/api/v1/evaluate/custom",
+        ).inc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error during custom evaluation.",
+        )
+    finally:
+        active_evaluations.dec()
 
 @app.get("/api/v1/history")
 async def get_history(

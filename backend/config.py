@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
     APP_VERSION: str = "1.0.0"
     ESTIMATED_COST_PER_TOKEN_USD: float = 0.000002
+
+    # LLM Configuration
+    USE_REAL_LLM: bool = False
+    HUGGINGFACE_API_KEY: str = ""
+    HUGGINGFACE_MODEL: str = "facebook/bart-large-cnn"
     
     @property
     def is_production(self) -> bool:

@@ -338,3 +338,96 @@ body {
   .app-header { padding: 0 16px; }
   .app-header__name, .app-header__accent { font-size: 17px; }
 }
+
+/* ── Mode Toggle ── */
+.mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.mode-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.mode-tab--active {
+  background: var(--bg-card);
+  color: var(--accent-cyan);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.mode-tab:hover:not(.mode-tab--active) {
+  color: var(--text-secondary);
+}
+
+/* ── Custom Eval Panel ── */
+.custom-eval-panel { display: flex; flex-direction: column; gap: 16px; }
+.custom-eval-intro { margin-bottom: 4px; }
+.custom-eval-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  border-left: 2px solid var(--accent-cyan);
+  padding-left: 12px;
+}
+.custom-field { display: flex; flex-direction: column; gap: 6px; }
+.custom-textarea {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 120px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.custom-textarea:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px rgba(0,212,255,0.15);
+}
+.custom-textarea:disabled { opacity: 0.5; cursor: not-allowed; }
+.custom-textarea::placeholder { color: var(--text-muted); }
+.custom-textarea-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.char-count { font-size: 11px; color: var(--text-muted); }
+.char-count--warn { color: var(--accent-amber); }
+.custom-select {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  appearance: none;
+}
+.custom-select:focus { border-color: var(--accent-cyan); }
+.custom-select option { background: var(--bg-tertiary); }
+.custom-field-hint { font-size: 11px; color: var(--text-muted); }
+.custom-empty-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+}

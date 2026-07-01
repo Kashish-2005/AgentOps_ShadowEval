@@ -58,7 +58,12 @@ class ApiClient {
       body: JSON.stringify({ persona_name, concurrency_limit }),
     });
   }
-
+  async evaluateCustom(prompt: string, persona_name = "power_user"): Promise<RunResult> {
+    return this.request<RunResult>("/api/v1/evaluate/custom", {
+      method: "POST",
+      body: JSON.stringify({ prompt, persona_name }),
+    });
+  }
   async batchEvaluate(
     persona_names: string[],
     concurrency_limit = 3

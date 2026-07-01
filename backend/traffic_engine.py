@@ -41,6 +41,7 @@ class RunResult(BaseModel):
 async def run_persona(
     persona: PersonaProfile,
     semaphore: asyncio.Semaphore,
+    custom_prompt: str | None = None,
 ) -> RunResult:
     """
     Simulates a single agent interaction loop for a specific persona.
@@ -52,6 +53,9 @@ async def run_persona(
     Args:
         persona: The behavioral profile to simulate.
         semaphore: A concurrency primitive to limit simultaneous runs.
+        custom_prompt: If provided, forces a real query_llm call using this
+            exact prompt instead of random tool selection. Used when a real
+            user submits their own text for evaluation.
 
     Returns:
         RunResult: The structured results of the simulation.
@@ -62,35 +66,42 @@ async def run_persona(
         
         tracker = TrajectoryTracker(loop_threshold=4)
         loop_detected = False
-        
-        # Determine number of tool calls
-        num_calls = max(2, min(5, persona["expected_tool_calls"]))
-        
         tool_sequence: list[str] = []
         
         try:
-            for _ in range(num_calls):
-                # Pseudo-randomly select a tool from the registry
-                tool_name = random.choice(list(TOOL_REGISTRY.keys()))
+            if custom_prompt:
+                # Real user prompt — single forced call to query_llm
+                tool_name = "query_llm"
                 tool_sequence.append(tool_name)
                 tool_fn = TOOL_REGISTRY[tool_name]
-                
-                # Construct a payload. 
-                is_malformed = (persona["name"] == "Adversarial Tester" and random.random() < 0.3)
-                
-                payload: dict[str, Any] = {}
-                if tool_name == "query_database":
-                    if not is_malformed:
-                        payload = {"table": random.choice(["users", "orders"]), "filter": "id > 0"}
-                elif tool_name == "financial_calculator":
-                    if not is_malformed:
-                        payload = {
-                            "operation": random.choice(["sum", "avg"]),
-                            "values": [random.uniform(10, 100) for _ in range(3)]
-                        }
-
-                # Execute tool call
+                payload: dict[str, Any] = {"prompt": custom_prompt, "max_length": 150}
                 await tracked_tool_call(tracker, tool_fn, payload)
+            else:
+                # Simulated persona behavior — existing random logic unchanged
+                num_calls = max(2, min(5, persona["expected_tool_calls"]))
+
+                for _ in range(num_calls):
+                    tool_name = random.choice(list(TOOL_REGISTRY.keys()))
+                    tool_sequence.append(tool_name)
+                    tool_fn = TOOL_REGISTRY[tool_name]
+
+                    is_malformed = (persona["name"] == "Adversarial Tester" and random.random() < 0.3)
+
+                    payload = {}
+                    if tool_name == "query_database":
+                        if not is_malformed:
+                            payload = {"table": random.choice(["users", "orders"]), "filter": "id > 0"}
+                    elif tool_name == "financial_calculator":
+                        if not is_malformed:
+                            payload = {
+                                "operation": random.choice(["sum", "avg"]),
+                                "values": [random.uniform(10, 100) for _ in range(3)]
+                            }
+                    elif tool_name == "query_llm":
+                        if not is_malformed:
+                            payload = {"prompt": f"Analyze this scenario for {persona['name']}", "max_length": 100}
+
+                    await tracked_tool_call(tracker, tool_fn, payload)
 
         except InfiniteLoopError as e:
             logger.warning(f"Loop detected for {persona['name']}: {e}")
@@ -101,7 +112,6 @@ async def run_persona(
         end_time = time.perf_counter()
         total_latency_ms = (end_time - start_time) * 1000
         
-        # Generate the evaluation report
         eval_report = evaluate(
             tracker=tracker,
             persona_name=persona["name"],
@@ -109,7 +119,6 @@ async def run_persona(
             loop_detected=loop_detected
         )
         
-        # Mock token count based on query style
         token_base = 1000 if "verbose" in persona["query_style"] else 200
         simulated_tokens = token_base + random.randint(50, 500)
 
